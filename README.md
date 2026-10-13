@@ -43,6 +43,22 @@ streamlit run app.py
 
 The application will be available at http://localhost:8501
 
+## Building the corpus
+
+The `wiki-rag ingest` command downloads the articles of one or more English Wikipedia
+categories through the MediaWiki API and writes them, split into sections, to a JSON Lines file:
+
+```bash
+uv run wiki-rag ingest \
+  --category Philosophical_concepts --category Philosophical_theories \
+  --depth 1 --limit 300 --out data/articles.jsonl
+```
+
+Each line holds one article with its URL, revision id and a list of sections. Every section
+keeps its heading path (for example `History > Western`), so answers can cite the exact part
+of the article they came from. Reference-only sections such as "See also" are dropped, and
+articles with less than `--min-chars` of prose are skipped.
+
 ## Development
 
 The project is managed with [uv](https://docs.astral.sh/uv/):

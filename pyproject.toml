@@ -4,7 +4,12 @@ version = "0.1.0"
 description = "Retrieval-augmented question answering over Wikipedia philosophy articles"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "httpx>=0.27",
+]
+
+[project.scripts]
+wiki-rag = "wiki_rag.cli:main"
 
 [dependency-groups]
 dev = [
