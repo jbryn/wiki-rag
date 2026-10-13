@@ -59,6 +59,25 @@ keeps its heading path (for example `History > Western`), so answers can cite th
 of the article they came from. Reference-only sections such as "See also" are dropped, and
 articles with less than `--min-chars` of prose are skipped.
 
+## Indexing and searching
+
+```bash
+uv run wiki-rag index                                   # data/articles.jsonl -> data/index
+uv run wiki-rag search "what did Sartre mean by self-deception" --mode hybrid -k 5
+```
+
+`index` splits every section into chunks of at most `--max-chars` characters (never crossing a
+section boundary), embeds them locally with `BAAI/bge-small-en-v1.5` through
+[fastembed](https://github.com/qdrant/fastembed) and saves the result to disk.
+
+`search` supports three modes:
+
+- `bm25` - lexical matching with Okapi BM25
+- `dense` - cosine similarity between embeddings
+- `hybrid` (default) - both rankings merged with reciprocal rank fusion
+
+Each result links to the section of the Wikipedia article it came from.
+
 ## Development
 
 The project is managed with [uv](https://docs.astral.sh/uv/):

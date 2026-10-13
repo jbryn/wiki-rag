@@ -7,6 +7,9 @@ import json
 import sys
 from pathlib import Path
 
+from wiki_rag.chunking import chunk_article
+from wiki_rag.embeddings import DEFAULT_MODEL, FastEmbedEmbedder
+from wiki_rag.index import MODES, Index
 from wiki_rag.ingest import WikipediaClient
 
 DEFAULT_CATEGORY = "Philosophy"
@@ -38,6 +41,29 @@ def _ingest(args: argparse.Namespace) -> int:
     return 0
 
 
+def _index(args: argparse.Namespace) -> int:
+    with args.articles.open(encoding="utf-8") as f:
+        chunks = [
+            chunk
+            for line in f
+            for chunk in chunk_article(json.loads(line), max_chars=args.max_chars)
+        ]
+    print(f"Embedding {len(chunks)} chunks with {args.model}...", file=sys.stderr)
+    Index.build(chunks, FastEmbedEmbedder(args.model)).save(args.out)
+    print(f"Wrote index to {args.out}", file=sys.stderr)
+    return 0
+
+
+def _search(args: argparse.Namespace) -> int:
+    index = Index.load(args.index, FastEmbedEmbedder(args.model))
+    for result in index.search(args.query, k=args.k, mode=args.mode):
+        chunk = result.chunk
+        print(f"{result.score:.4f}  {chunk.heading}")
+        print(f"        {chunk.text[:200]}")
+        print(f"        {chunk.source_url}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="wiki-rag", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -58,6 +84,21 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("--lang", default="en", help="Wikipedia language edition")
     ingest.add_argument("--out", type=Path, default=Path("data/articles.jsonl"))
     ingest.set_defaults(run=_ingest)
+
+    index = commands.add_parser("index", help="chunk the articles and build a search index")
+    index.add_argument("--articles", type=Path, default=Path("data/articles.jsonl"))
+    index.add_argument("--out", type=Path, default=Path("data/index"))
+    index.add_argument("--max-chars", type=int, default=1200, help="maximum chunk size")
+    index.add_argument("--model", default=DEFAULT_MODEL, help="fastembed embedding model")
+    index.set_defaults(run=_index)
+
+    search = commands.add_parser("search", help="query the index and print the best chunks")
+    search.add_argument("query")
+    search.add_argument("--index", type=Path, default=Path("data/index"))
+    search.add_argument("--mode", choices=MODES, default="hybrid")
+    search.add_argument("-k", type=int, default=5, help="number of results")
+    search.add_argument("--model", default=DEFAULT_MODEL, help="fastembed embedding model")
+    search.set_defaults(run=_search)
     return parser
 
 
