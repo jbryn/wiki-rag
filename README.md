@@ -32,7 +32,8 @@ GROQ_API_KEY=your_api_key
 
 - `app.py` - main application code
 - `summaries_status.json` - article summaries cache
-- `wiki_articles.json` - articles database
+- `articles.json` - articles database
+- `src/wiki_rag/` - package for the new pipeline (in progress)
 
 ## Running the Application
 
@@ -41,3 +42,16 @@ streamlit run app.py
 ```
 
 The application will be available at http://localhost:8501
+
+## Development
+
+The project is managed with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv sync                 # install the package and dev tools
+uv run ruff check .     # lint
+uv run ruff format .    # format
+uv run pytest           # tests
+```
+
+The same checks run in CI on every pull request.
